@@ -85,9 +85,10 @@ fi
 # Run the sandbox container
 # ---------------------------------------------------------------------------
 exec docker run --rm -it \
-    --cap-add=NET_ADMIN \
     --cap-drop=ALL \
-    --security-opt no-new-privileges:false \
+    --cap-add=NET_ADMIN \
+    --cap-add=SETUID \
+    --cap-add=SETGID \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "DNS_SERVER=$DNS_SERVER" \
