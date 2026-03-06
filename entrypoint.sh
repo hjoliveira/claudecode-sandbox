@@ -32,7 +32,8 @@ fi
 # Resolve domains to IPs
 # ---------------------------------------------------------------------------
 IFS=',' read -ra DOMAIN_LIST <<< "$ALLOWED_DOMAINS"
-declare -a ALLOWED_IPS=()
+declare -a ALLOWED_IPV4=()
+declare -a ALLOWED_IPV6=()
 
 for domain in "${DOMAIN_LIST[@]}"; do
     domain="$(echo "$domain" | xargs)"
@@ -45,45 +46,61 @@ for domain in "${DOMAIN_LIST[@]}"; do
         echo "Warning: Could not resolve $domain — no IPs found." >&2
     fi
 
-    for ip in $ips $ips6; do
+    for ip in $ips; do
         log "  -> $ip"
-        ALLOWED_IPS+=("$ip")
+        ALLOWED_IPV4+=("$ip")
+    done
+    for ip in $ips6; do
+        log "  -> $ip"
+        ALLOWED_IPV6+=("$ip")
     done
 done
 
-if [[ ${#ALLOWED_IPS[@]} -eq 0 ]]; then
+if [[ ${#ALLOWED_IPV4[@]} -eq 0 && ${#ALLOWED_IPV6[@]} -eq 0 ]]; then
     echo "Error: No IPs resolved from the domain whitelist. Check your domains and DNS." >&2
     exit 1
 fi
 
-ALLOWED_IPS+=("$DNS_SERVER")
-log "Allowed IPs: ${ALLOWED_IPS[*]}"
+ALLOWED_IPV4+=("$DNS_SERVER")
+log "Allowed IPv4: ${ALLOWED_IPV4[*]}"
+[[ ${#ALLOWED_IPV6[@]} -gt 0 ]] && log "Allowed IPv6: ${ALLOWED_IPV6[*]}"
 
 # ---------------------------------------------------------------------------
 # Configure iptables OUTPUT rules
 # ---------------------------------------------------------------------------
 log "Configuring iptables egress rules"
 
+# --- IPv4 rules ---
 iptables -F OUTPUT 2>/dev/null || true
 iptables -P OUTPUT DROP
-
-# Allow loopback
 iptables -A OUTPUT -o lo -j ACCEPT
-
-# Allow DNS
 iptables -A OUTPUT -p udp --dport 53 -d "$DNS_SERVER" -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 53 -d "$DNS_SERVER" -j ACCEPT
-
-# Allow established/related
 iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# Allow whitelisted IPs
-for ip in "${ALLOWED_IPS[@]}"; do
+for ip in "${ALLOWED_IPV4[@]}"; do
     iptables -A OUTPUT -d "$ip" -j ACCEPT
 done
 
-# Reject everything else with a clear error
 iptables -A OUTPUT -j REJECT --reject-with icmp-net-unreachable
+
+# --- IPv6 rules ---
+if [[ ${#ALLOWED_IPV6[@]} -gt 0 ]]; then
+    ip6tables -F OUTPUT 2>/dev/null || true
+    ip6tables -P OUTPUT DROP
+    ip6tables -A OUTPUT -o lo -j ACCEPT
+    ip6tables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+    for ip in "${ALLOWED_IPV6[@]}"; do
+        ip6tables -A OUTPUT -d "$ip" -j ACCEPT
+    done
+
+    ip6tables -A OUTPUT -j REJECT --reject-with icmp6-addr-unreachable
+else
+    # No IPv6 addresses resolved — block all IPv6 egress
+    ip6tables -F OUTPUT 2>/dev/null || true
+    ip6tables -P OUTPUT DROP 2>/dev/null || true
+fi
 
 log "Network rules applied"
 
