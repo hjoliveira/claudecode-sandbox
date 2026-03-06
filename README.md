@@ -17,27 +17,22 @@ Run Claude Code CLI in a Docker-based sandbox with:
 # 1. Clone this repo
 git clone <repo-url> && cd claudecode-sandbox
 
-# 2. Run Claude Code sandboxed to ./my-project, allowing only the Claude API
-./sandbox.sh \
-  --dir ./my-project \
-  --domains "api.anthropic.com"
+# 2. Run Claude Code sandboxed to ./my-project (Anthropic domains included by default)
+./sandbox.sh --dir ./my-project
 
-# 3. With more domains and verbose logging
+# 3. Allow additional domains and enable verbose logging
 ./sandbox.sh \
   --dir ~/code/my-app \
-  --domains "api.anthropic.com,github.com,api.github.com,registry.npmjs.org" \
+  --domains "github.com,api.github.com,registry.npmjs.org" \
   --verbose
 
 # 4. Pass extra arguments to claude after --
 ./sandbox.sh \
   --dir ./my-project \
-  --domains "api.anthropic.com" \
   -- --model sonnet --print "fix the tests"
 
 # 5. Force rebuild the image (e.g. after updating Claude Code)
-./sandbox.sh --build \
-  --dir ./my-project \
-  --domains "api.anthropic.com"
+./sandbox.sh --build --dir ./my-project
 ```
 
 ## Options
@@ -45,7 +40,7 @@ git clone <repo-url> && cd claudecode-sandbox
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--dir DIR` | Project directory to expose (required) | — |
-| `--domains LIST` | Comma-separated allowed domains (required) | — |
+| `--domains LIST` | Additional comma-separated allowed domains | — |
 | `--dns-server IP` | DNS server for resolving domains | `8.8.8.8` |
 | `--verbose` | Print debug info to stderr | off |
 | `--build` | Force rebuild the Docker image | off |
@@ -66,7 +61,7 @@ git clone <repo-url> && cd claudecode-sandbox
 │  │  entrypoint.sh:                          │    │
 │  │    1. Resolve ALLOWED_DOMAINS → IPs      │    │
 │  │    2. iptables OUTPUT rules (whitelist)   │    │
-│  │    3. Drop to non-root user (gosu)       │    │
+│  │    3. Drop to non-root user (setpriv)     │    │
 │  │    4. exec claude                        │    │
 │  │                                          │    │
 │  │  Filesystem:                             │    │
@@ -81,7 +76,7 @@ git clone <repo-url> && cd claudecode-sandbox
 │  │                                          │    │
 │  │  Security:                               │    │
 │  │    --cap-drop=ALL (except NET_ADMIN)     │    │
-│  │    --security-opt no-new-privileges      │    │
+│  │    SETUID/SETGID (for user switch)       │    │
 │  │    Claude runs as non-root user          │    │
 │  └──────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────┘
@@ -94,11 +89,21 @@ git clone <repo-url> && cd claudecode-sandbox
 - **cgroup isolation** — CPU/memory limits can be added via `--memory` / `--cpus`
 - **User isolation** — Claude runs as a non-root user inside the container; no root on the host
 
-## Domain Whitelist Recommendations
+## Domain Whitelist
+
+The following Anthropic domains are **always included** automatically:
 
 | Domain | Why |
 |--------|-----|
-| `api.anthropic.com` | **Required.** Claude API calls. |
+| `api.anthropic.com` | Claude API calls |
+| `claude.ai` | Authentication |
+| `platform.claude.com` | Authentication |
+| `statsig.anthropic.com` | Feature flags |
+
+Use `--domains` to allow additional services:
+
+| Domain | Why |
+|--------|-----|
 | `github.com` | Git push/pull over HTTPS. |
 | `api.github.com` | GitHub API (PRs, issues, etc.). |
 | `registry.npmjs.org` | `npm install` |
