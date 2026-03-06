@@ -133,6 +133,19 @@ fi
 log "Network rules applied"
 
 # ---------------------------------------------------------------------------
+# Restore .claude.json from backup if missing (bind-mount from host may lack it)
+# ---------------------------------------------------------------------------
+CLAUDE_JSON="/home/sandbox/.claude.json"
+if [[ ! -f "$CLAUDE_JSON" ]]; then
+    BACKUP=$(find /home/sandbox/.claude/backups -name '.claude.json.backup.*' 2>/dev/null | sort -t. -k4 -n | tail -1)
+    if [[ -n "$BACKUP" ]]; then
+        cp "$BACKUP" "$CLAUDE_JSON"
+        chown sandbox:sandbox "$CLAUDE_JSON"
+        log "Restored $CLAUDE_JSON from backup"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # Drop to non-root user and run Claude Code
 # ---------------------------------------------------------------------------
 export HOME=/home/sandbox
