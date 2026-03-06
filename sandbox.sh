@@ -100,11 +100,9 @@ if [[ -d "${HOME}/.claude" ]]; then
     CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
 fi
 # Also mount ~/.claude.json (main config file lives outside ~/.claude/)
-if [[ -f "${HOME}/.claude.json" ]]; then
-    CLAUDE_CONFIG_MOUNT+=(-v "${HOME}/.claude.json:/home/sandbox/.claude.json")
-else
-    echo "Note: ~/.claude.json not found — will be created on first run." >&2
-fi
+# Touch it first so Docker mounts it as a file, not a directory
+[[ -f "${HOME}/.claude.json" ]] || touch "${HOME}/.claude.json"
+CLAUDE_CONFIG_MOUNT+=(-v "${HOME}/.claude.json:/home/sandbox/.claude.json")
 
 # ---------------------------------------------------------------------------
 # Run the sandbox container
