@@ -33,8 +33,9 @@ if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
     log "Set sandbox GID to $HOST_GID"
 fi
 
-# Fix ownership of sandbox home directory itself
-chown sandbox:sandbox /home/sandbox 2>/dev/null || true
+# Fix ownership of sandbox home directory itself (must be writable for .claude.json)
+chown sandbox:sandbox /home/sandbox
+chmod 755 /home/sandbox
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +140,11 @@ CLAUDE_JSON="/home/sandbox/.claude.json"
 if [[ ! -f "$CLAUDE_JSON" ]]; then
     BACKUP=$(find /home/sandbox/.claude/backups -name '.claude.json.backup.*' 2>/dev/null | sort -t. -k4 -n | tail -1)
     if [[ -n "$BACKUP" ]]; then
-        cp "$BACKUP" "$CLAUDE_JSON"
+        # Home dir may not be writable by sandbox yet; copy as root then fix ownership
+        cp "$BACKUP" "$CLAUDE_JSON" 2>/dev/null || {
+            chmod u+w /home/sandbox
+            cp "$BACKUP" "$CLAUDE_JSON"
+        }
         chown sandbox:sandbox "$CLAUDE_JSON"
         log "Restored $CLAUDE_JSON from backup"
     fi
