@@ -97,7 +97,7 @@ fi
 # ---------------------------------------------------------------------------
 CLAUDE_CONFIG_MOUNT=()
 if [[ -d "${HOME}/.claude" ]]; then
-    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude:ro")
+    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
 else
     echo "Warning: ~/.claude not found — you may need to log in interactively." >&2
 fi
