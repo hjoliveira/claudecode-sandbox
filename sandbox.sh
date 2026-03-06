@@ -29,7 +29,7 @@ Options:
   -h, --help          Show this help message
 
 Environment:
-  ANTHROPIC_API_KEY   Must be set (passed into the container)
+  ANTHROPIC_API_KEY   API key (optional; omit to log in interactively)
 
 Examples:
   ./sandbox.sh --dir ./my-project --domains "api.anthropic.com"
@@ -58,9 +58,9 @@ if [[ -z "$ALLOWED_DIR" || -z "$ALLOWED_DOMAINS" ]]; then
     usage
 fi
 
-if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-    echo "Error: ANTHROPIC_API_KEY environment variable must be set."
-    exit 1
+API_KEY_ENV=()
+if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+    API_KEY_ENV=(-e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY")
 fi
 
 # Resolve to absolute path (works on macOS and Linux)
@@ -88,7 +88,7 @@ exec docker run --rm -it \
     --cap-add=NET_ADMIN \
     --cap-drop=ALL \
     --security-opt no-new-privileges:true \
-    -e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" \
+    ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \
