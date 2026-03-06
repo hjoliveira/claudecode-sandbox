@@ -22,9 +22,10 @@ log() {
 # ---------------------------------------------------------------------------
 if [[ -z "$ALLOWED_DOMAINS" ]]; then
     echo "Warning: ALLOWED_DOMAINS is empty — running without network restrictions." >&2
+    export HOME=/home/sandbox
     SANDBOX_UID="$(id -u sandbox)"
-SANDBOX_GID="$(id -g sandbox)"
-exec setpriv --reuid="$SANDBOX_UID" --regid="$SANDBOX_GID" --init-groups claude "$@"
+    SANDBOX_GID="$(id -g sandbox)"
+    exec setpriv --reuid="$SANDBOX_UID" --regid="$SANDBOX_GID" --init-groups claude "$@"
 fi
 
 # ---------------------------------------------------------------------------
@@ -90,6 +91,7 @@ log "Network rules applied"
 # Drop to non-root user and run Claude Code
 # ---------------------------------------------------------------------------
 log "Launching Claude Code as sandbox user"
+export HOME=/home/sandbox
 SANDBOX_UID="$(id -u sandbox)"
 SANDBOX_GID="$(id -g sandbox)"
 exec setpriv --reuid="$SANDBOX_UID" --regid="$SANDBOX_GID" --init-groups claude "$@"
