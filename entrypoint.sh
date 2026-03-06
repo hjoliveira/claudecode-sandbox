@@ -134,6 +134,31 @@ fi
 log "Network rules applied"
 
 # ---------------------------------------------------------------------------
+# Persist .claude.json across container runs.
+# The file lives at $HOME/.claude.json but the volume is mounted at
+# /home/sandbox/.claude-json/. Symlink so Claude reads/writes the volume.
+# ---------------------------------------------------------------------------
+CLAUDE_JSON_VOL="/home/sandbox/.claude-json"
+CLAUDE_JSON="/home/sandbox/.claude.json"
+if [[ -d "$CLAUDE_JSON_VOL" ]]; then
+    # If .claude.json already exists (not a symlink), move it into the volume
+    if [[ -f "$CLAUDE_JSON" && ! -L "$CLAUDE_JSON" ]]; then
+        mv "$CLAUDE_JSON" "$CLAUDE_JSON_VOL/.claude.json"
+    fi
+    # Create symlink if not already present
+    if [[ ! -L "$CLAUDE_JSON" ]]; then
+        # Seed with empty JSON if volume file doesn't exist yet
+        [[ -f "$CLAUDE_JSON_VOL/.claude.json" ]] || echo '{}' > "$CLAUDE_JSON_VOL/.claude.json"
+        ln -sf "$CLAUDE_JSON_VOL/.claude.json" "$CLAUDE_JSON"
+    fi
+    chown -R sandbox:sandbox "$CLAUDE_JSON_VOL" 2>/dev/null || true
+    chown -h sandbox:sandbox "$CLAUDE_JSON" 2>/dev/null || true
+fi
+
+# Fix ownership of .claude dir (bind-mounted volume)
+chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
 # Drop to non-root user and run Claude Code
 # ---------------------------------------------------------------------------
 export HOME=/home/sandbox

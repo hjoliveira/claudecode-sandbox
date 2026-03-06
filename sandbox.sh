@@ -94,6 +94,12 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
+# Persist container Claude config across runs
+# ---------------------------------------------------------------------------
+SANDBOX_CONFIG="${HOME}/.claudecode-sandbox"
+mkdir -p "$SANDBOX_CONFIG/claude" "$SANDBOX_CONFIG/claude-json"
+
+# ---------------------------------------------------------------------------
 # Run the sandbox container
 # ---------------------------------------------------------------------------
 exec docker run --rm -it \
@@ -111,6 +117,8 @@ exec docker run --rm -it \
     --dns "$DNS_SERVER" \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \
+    -v "$SANDBOX_CONFIG/claude:/home/sandbox/.claude" \
+    -v "$SANDBOX_CONFIG/claude-json:/home/sandbox/.claude-json" \
     -v "$ALLOWED_DIR:/home/sandbox/project" \
     --tmpfs /tmp:size=512M \
     "$IMAGE_NAME" \
