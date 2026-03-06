@@ -110,6 +110,7 @@ exec docker run --rm -it \
     --cap-add=SETUID \
     --cap-add=SETGID \
     --cap-add=CHOWN \
+    --cap-add=DAC_OVERRIDE \
     --cap-add=FOWNER \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
