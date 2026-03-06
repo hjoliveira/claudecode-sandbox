@@ -94,15 +94,18 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Mount host ~/.claude config for persisting auth tokens across runs.
+# Persist only the OAuth credentials file across runs.
 #
-# OAuth credentials are stored in ~/.claude/.credentials.json.
-# On first run, Claude will prompt for login automatically.
-# Credentials persist via the bind mount.
+# We mount just ~/.claude/.credentials.json rather than the entire ~/.claude
+# directory. Mounting the whole directory leaks host config (hooks, project
+# settings, cached org references) into the container, which can produce
+# invalid OAuth scopes like "org:" (empty org ID).
 # ---------------------------------------------------------------------------
+CLAUDE_CREDS="${HOME}/.claude/.credentials.json"
 CLAUDE_CONFIG_MOUNT=()
 mkdir -p "${HOME}/.claude"
-CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
+touch "$CLAUDE_CREDS"
+CLAUDE_CONFIG_MOUNT=(-v "$CLAUDE_CREDS:/home/sandbox/.claude/.credentials.json")
 
 # ---------------------------------------------------------------------------
 # Run the sandbox container
