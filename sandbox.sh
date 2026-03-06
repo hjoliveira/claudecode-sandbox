@@ -109,6 +109,8 @@ exec docker run --rm -it \
     --cap-add=NET_ADMIN \
     --cap-add=SETUID \
     --cap-add=SETGID \
+    --cap-add=CHOWN \
+    --cap-add=FOWNER \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "HOST_UID=$(id -u)" \
