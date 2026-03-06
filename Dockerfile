@@ -26,6 +26,9 @@ RUN useradd -m -s /bin/bash sandbox
 
 # Project directory — the host project will be bind-mounted here
 RUN mkdir -p /home/sandbox/project && chown sandbox:sandbox /home/sandbox/project
+
+# Claude config directory — only credentials file is bind-mounted from host
+RUN mkdir -p /home/sandbox/.claude && chown sandbox:sandbox /home/sandbox/.claude
 WORKDIR /home/sandbox/project
 
 COPY entrypoint.sh /entrypoint.sh

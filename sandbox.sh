@@ -5,11 +5,12 @@
 # Works on any OS with Docker installed. Does NOT require root on the host.
 #
 # Usage:
-#   ./sandbox.sh --dir /path/to/project --domains "api.anthropic.com,github.com" [-- claude args...]
+#   ./sandbox.sh --dir /path/to/project [--domains "github.com,..."] [-- claude args...]
 #
 set -euo pipefail
 
 IMAGE_NAME="claude-sandbox"
+DEFAULT_DOMAINS="api.anthropic.com,claude.ai,platform.claude.com,statsig.anthropic.com,console.anthropic.com,auth.anthropic.com"
 ALLOWED_DIR=""
 ALLOWED_DOMAINS=""
 DNS_SERVER="${DNS_SERVER:-8.8.8.8}"
@@ -22,7 +23,7 @@ Usage: ./sandbox.sh [OPTIONS] [-- claude-code-args...]
 
 Options:
   --dir DIR           Directory to expose to Claude Code (required)
-  --domains LIST      Comma-separated list of allowed domains (required)
+  --domains LIST      Additional comma-separated allowed domains (optional)
   --dns-server IP     DNS server for resolving domains (default: 8.8.8.8)
   --verbose           Enable verbose logging
   --build             Force rebuild the Docker image
@@ -31,9 +32,13 @@ Options:
 Environment:
   ANTHROPIC_API_KEY   API key (optional; omit to log in interactively)
 
+Default domains (always included):
+  api.anthropic.com, claude.ai, platform.claude.com, statsig.anthropic.com,
+  console.anthropic.com, auth.anthropic.com
+
 Examples:
-  ./sandbox.sh --dir ./my-project --domains "api.anthropic.com"
-  ./sandbox.sh --dir /home/user/code --domains "api.anthropic.com,github.com" -- --model sonnet
+  ./sandbox.sh --dir ./my-project
+  ./sandbox.sh --dir /home/user/code --domains "github.com,api.github.com" -- --model sonnet
 USAGE
     exit 0
 }
@@ -53,9 +58,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z "$ALLOWED_DIR" || -z "$ALLOWED_DOMAINS" ]]; then
-    echo "Error: --dir and --domains are required."
+if [[ -z "$ALLOWED_DIR" ]]; then
+    echo "Error: --dir is required."
     usage
+fi
+
+# Merge default Anthropic domains with user-supplied domains
+if [[ -n "$ALLOWED_DOMAINS" ]]; then
+    ALLOWED_DOMAINS="${DEFAULT_DOMAINS},${ALLOWED_DOMAINS}"
+else
+    ALLOWED_DOMAINS="$DEFAULT_DOMAINS"
 fi
 
 API_KEY_ENV=()
@@ -82,16 +94,31 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
+# Persist container Claude config across runs
+# ---------------------------------------------------------------------------
+SANDBOX_CONFIG="${HOME}/.claudecode-sandbox"
+mkdir -p "$SANDBOX_CONFIG/claude" "$SANDBOX_CONFIG/claude-json"
+
+# ---------------------------------------------------------------------------
 # Run the sandbox container
 # ---------------------------------------------------------------------------
 exec docker run --rm -it \
-    --cap-add=NET_ADMIN \
     --cap-drop=ALL \
-    --security-opt no-new-privileges:true \
+    --cap-add=NET_ADMIN \
+    --cap-add=SETUID \
+    --cap-add=SETGID \
+    --cap-add=CHOWN \
+    --cap-add=DAC_OVERRIDE \
+    --cap-add=FOWNER \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
+    -e "HOST_UID=$(id -u)" \
+    -e "HOST_GID=$(id -g)" \
+    --dns "$DNS_SERVER" \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \
+    -v "$SANDBOX_CONFIG/claude:/home/sandbox/.claude" \
+    -v "$SANDBOX_CONFIG/claude-json:/home/sandbox/.claude-json" \
     -v "$ALLOWED_DIR:/home/sandbox/project" \
     --tmpfs /tmp:size=512M \
     "$IMAGE_NAME" \
