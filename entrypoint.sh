@@ -43,9 +43,7 @@ chown sandbox:sandbox /home/sandbox 2>/dev/null || true
 if [[ -z "$ALLOWED_DOMAINS" ]]; then
     echo "Warning: ALLOWED_DOMAINS is empty — running without network restrictions." >&2
     export HOME=/home/sandbox
-    SANDBOX_UID="$(id -u sandbox)"
-    SANDBOX_GID="$(id -g sandbox)"
-    exec setpriv --reuid="$SANDBOX_UID" --regid="$SANDBOX_GID" --init-groups claude "$@"
+    exec gosu sandbox claude "$@"
 fi
 
 # ---------------------------------------------------------------------------
@@ -137,6 +135,4 @@ log "Network rules applied"
 # ---------------------------------------------------------------------------
 log "Launching Claude Code as sandbox user"
 export HOME=/home/sandbox
-SANDBOX_UID="$(id -u sandbox)"
-SANDBOX_GID="$(id -g sandbox)"
-exec setpriv --reuid="$SANDBOX_UID" --regid="$SANDBOX_GID" --init-groups claude "$@"
+exec gosu sandbox claude "$@"
