@@ -43,6 +43,8 @@ chown sandbox:sandbox /home/sandbox 2>/dev/null || true
 if [[ -z "$ALLOWED_DOMAINS" ]]; then
     echo "Warning: ALLOWED_DOMAINS is empty — running without network restrictions." >&2
     export HOME=/home/sandbox
+    export BROWSER=false
+    export NO_UPDATE_NOTIFIER=1
     exec gosu sandbox claude "$@"
 fi
 
@@ -133,6 +135,22 @@ log "Network rules applied"
 # ---------------------------------------------------------------------------
 # Drop to non-root user and run Claude Code
 # ---------------------------------------------------------------------------
-log "Launching Claude Code as sandbox user"
 export HOME=/home/sandbox
+
+# Prevent Node.js from trying to open a browser for OAuth — there's no
+# display in the container, and xdg-open can hang waiting for D-Bus.
+export BROWSER=false
+
+# Disable npm update-notifier (would try to reach registry.npmjs.org, blocked)
+export NO_UPDATE_NOTIFIER=1
+
+if [[ "$VERBOSE" == "1" ]]; then
+    log "Launching Claude Code as sandbox user"
+    log "Testing privilege drop..."
+    gosu sandbox node -e 'console.error("[sandbox] node: ok, uid=" + process.getuid())' || true
+    log "Testing claude --version..."
+    gosu sandbox claude --version 2>&1 | head -1 || true
+    log "Starting claude..."
+fi
+
 exec gosu sandbox claude "$@"
