@@ -93,13 +93,17 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Mount host ~/.claude config (read-only) for reusing auth tokens
+# Mount host ~/.claude config for reusing auth tokens
 # ---------------------------------------------------------------------------
 CLAUDE_CONFIG_MOUNT=()
 if [[ -d "${HOME}/.claude" ]]; then
     CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
+fi
+# Also mount ~/.claude.json (main config file lives outside ~/.claude/)
+if [[ -f "${HOME}/.claude.json" ]]; then
+    CLAUDE_CONFIG_MOUNT+=(-v "${HOME}/.claude.json:/home/sandbox/.claude.json")
 else
-    echo "Warning: ~/.claude not found — you may need to log in interactively." >&2
+    echo "Note: ~/.claude.json not found — will be created on first run." >&2
 fi
 
 # ---------------------------------------------------------------------------

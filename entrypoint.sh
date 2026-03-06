@@ -37,6 +37,18 @@ fi
 chown sandbox:sandbox /home/sandbox 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
+# Restore ~/.claude.json from backup if missing (Claude Code requires it)
+# ---------------------------------------------------------------------------
+if [[ ! -f /home/sandbox/.claude.json ]]; then
+    BACKUP="$(ls -t /home/sandbox/.claude/backups/.claude.json.backup.* 2>/dev/null | head -1)"
+    if [[ -n "$BACKUP" ]]; then
+        cp "$BACKUP" /home/sandbox/.claude.json
+        chown sandbox:sandbox /home/sandbox/.claude.json 2>/dev/null || true
+        log "Restored ~/.claude.json from backup"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # If no domain whitelist is set, run claude directly (no network filtering)
 # ---------------------------------------------------------------------------
 if [[ -z "$ALLOWED_DOMAINS" ]]; then
