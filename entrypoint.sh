@@ -19,6 +19,14 @@ log() {
 
 
 # ---------------------------------------------------------------------------
+# Fix ownership of mounted ~/.claude so sandbox user can read/write credentials
+# ---------------------------------------------------------------------------
+if [[ -d /home/sandbox/.claude ]]; then
+    chown -R sandbox:sandbox /home/sandbox/.claude
+    log "Fixed ~/.claude ownership for sandbox user"
+fi
+
+# ---------------------------------------------------------------------------
 # If no domain whitelist is set, run claude directly (no network filtering)
 # ---------------------------------------------------------------------------
 if [[ -z "$ALLOWED_DOMAINS" ]]; then

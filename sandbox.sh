@@ -10,7 +10,7 @@
 set -euo pipefail
 
 IMAGE_NAME="claude-sandbox"
-DEFAULT_DOMAINS="api.anthropic.com,claude.ai,platform.claude.com,statsig.anthropic.com"
+DEFAULT_DOMAINS="api.anthropic.com,claude.ai,platform.claude.com,statsig.anthropic.com,console.anthropic.com,auth.anthropic.com"
 ALLOWED_DIR=""
 ALLOWED_DOMAINS=""
 DNS_SERVER="${DNS_SERVER:-8.8.8.8}"
