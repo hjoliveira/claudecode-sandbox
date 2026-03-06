@@ -33,10 +33,12 @@ Environment:
   ANTHROPIC_API_KEY   API key (optional; omit to log in interactively)
 
 Default domains (always included):
-  api.anthropic.com, claude.ai, platform.claude.com, statsig.anthropic.com
+  api.anthropic.com, claude.ai, platform.claude.com, statsig.anthropic.com,
+  console.anthropic.com, auth.anthropic.com
 
 Examples:
   ./sandbox.sh --dir ./my-project
+  ./sandbox.sh --dir ./my-project -- --login        # First-time OAuth login
   ./sandbox.sh --dir /home/user/code --domains "github.com,api.github.com" -- --model sonnet
 USAGE
     exit 0
@@ -93,16 +95,15 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Mount host ~/.claude config for reusing auth tokens
+# Mount host ~/.claude config for persisting auth tokens across runs.
+#
+# OAuth credentials are stored in ~/.claude/.credentials.json.
+# On first run, use: ./sandbox.sh --dir ./project -- --login
+# to authenticate interactively. Credentials persist via the bind mount.
 # ---------------------------------------------------------------------------
 CLAUDE_CONFIG_MOUNT=()
-if [[ -d "${HOME}/.claude" ]]; then
-    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
-fi
-# Also mount ~/.claude.json (main config file lives outside ~/.claude/)
-# Touch it first so Docker mounts it as a file, not a directory
-[[ -f "${HOME}/.claude.json" ]] || touch "${HOME}/.claude.json"
-CLAUDE_CONFIG_MOUNT+=(-v "${HOME}/.claude.json:/home/sandbox/.claude.json")
+mkdir -p "${HOME}/.claude"
+CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
 
 # ---------------------------------------------------------------------------
 # Run the sandbox container
