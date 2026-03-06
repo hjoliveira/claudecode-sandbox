@@ -91,7 +91,6 @@ git clone <repo-url> && cd claudecode-sandbox
 
 - **seccomp** profile restricts available syscalls
 - **Capability dropping** — only `NET_ADMIN` is granted (for iptables); all others are dropped
-- **no-new-privileges** — prevents privilege escalation inside the container
 - **cgroup isolation** — CPU/memory limits can be added via `--memory` / `--cpus`
 - **User isolation** — Claude runs as a non-root user inside the container; no root on the host
 

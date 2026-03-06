@@ -87,7 +87,7 @@ fi
 exec docker run --rm -it \
     --cap-add=NET_ADMIN \
     --cap-drop=ALL \
-    --security-opt no-new-privileges:true \
+    --security-opt no-new-privileges:false \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "DNS_SERVER=$DNS_SERVER" \
