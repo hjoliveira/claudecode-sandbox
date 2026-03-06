@@ -1,0 +1,37 @@
+# sandbox.conf.example — Example configuration for Claude Code sandbox
+#
+# Copy this file to sandbox.conf and adjust to your needs.
+# Then run: sudo ./sandbox.sh --config sandbox.conf
+
+# ---------------------------------------------------------------------------
+# Filesystem: which directory Claude Code can access (read-write)
+# ---------------------------------------------------------------------------
+ALLOWED_DIR=./my-project
+
+# ---------------------------------------------------------------------------
+# Network: comma-separated list of domains Claude Code can reach
+# ---------------------------------------------------------------------------
+# Minimum required for Claude Code to function:
+#   api.anthropic.com        — Claude API
+#
+# Common additions:
+#   github.com               — Git operations
+#   api.github.com           — GitHub API (for PR creation, etc.)
+#   registry.npmjs.org       — npm package installs
+#   pypi.org                 — pip package installs
+#   files.pythonhosted.org   — pip package downloads
+#
+ALLOWED_DOMAINS=api.anthropic.com,github.com,api.github.com
+
+# ---------------------------------------------------------------------------
+# Optional settings
+# ---------------------------------------------------------------------------
+
+# Path to the claude binary (defaults to "claude" from PATH)
+# CLAUDE_BIN=/usr/local/bin/claude
+
+# DNS server used to resolve domain whitelist to IPs (default: 8.8.8.8)
+# DNS_SERVER=8.8.8.8
+
+# Enable verbose logging (0 or 1)
+# VERBOSE=0
