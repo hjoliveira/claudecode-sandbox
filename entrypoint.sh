@@ -150,7 +150,40 @@ if [[ "$VERBOSE" == "1" ]]; then
     gosu sandbox node -e 'console.error("[sandbox] node: ok, uid=" + process.getuid())' || true
     log "Testing claude --version..."
     gosu sandbox claude --version 2>&1 | head -1 || true
-    log "Starting claude..."
+    log "Testing network from sandbox user..."
+    gosu sandbox node -e '
+const dns = require("dns"), net = require("net");
+dns.resolve4("statsig.anthropic.com", (err, addrs) => {
+  if (err) { console.error("[sandbox] DNS statsig:", err.code); return; }
+  console.error("[sandbox] DNS statsig:", addrs.join(", "));
+  const s = net.connect(443, addrs[0]);
+  s.on("connect", () => { console.error("[sandbox] TCP statsig:443 OK"); s.destroy(); });
+  s.on("error", (e) => console.error("[sandbox] TCP statsig:443 FAIL:", e.code));
+  s.setTimeout(5000, () => { console.error("[sandbox] TCP statsig:443 TIMEOUT"); s.destroy(); });
+});
+dns.resolve4("api.anthropic.com", (err, addrs) => {
+  if (err) { console.error("[sandbox] DNS api:", err.code); return; }
+  console.error("[sandbox] DNS api:", addrs.join(", "));
+  const s = net.connect(443, addrs[0]);
+  s.on("connect", () => { console.error("[sandbox] TCP api:443 OK"); s.destroy(); });
+  s.on("error", (e) => console.error("[sandbox] TCP api:443 FAIL:", e.code));
+  s.setTimeout(5000, () => { console.error("[sandbox] TCP api:443 TIMEOUT"); s.destroy(); });
+});
+' 2>&1 || true
+    sleep 3
+    log "Starting claude (with strace for 10s)..."
+    # Trace network + poll/select syscalls for first 10 seconds, then kill strace
+    timeout 10 strace -f -e trace=connect,poll,select,epoll_wait,recvfrom \
+        -o /tmp/claude-strace.log \
+        gosu sandbox claude "$@" &
+    STRACE_PID=$!
+    sleep 11
+    kill $STRACE_PID 2>/dev/null || true
+    wait $STRACE_PID 2>/dev/null || true
+    log "=== strace output (last 40 lines) ==="
+    tail -40 /tmp/claude-strace.log >&2 || true
+    log "=== end strace ==="
+    log "Now launching claude normally..."
 fi
 
 exec gosu sandbox claude "$@"
