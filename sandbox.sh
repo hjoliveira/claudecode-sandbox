@@ -112,6 +112,8 @@ exec docker run --rm -it \
     --cap-add=SETGID \
     ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
+    -e "HOST_UID=$(id -u)" \
+    -e "HOST_GID=$(id -g)" \
     --dns "$DNS_SERVER" \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \

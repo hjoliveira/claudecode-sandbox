@@ -19,12 +19,22 @@ log() {
 
 
 # ---------------------------------------------------------------------------
-# Fix ownership of mounted ~/.claude so sandbox user can read/write credentials
+# Match sandbox user UID/GID to host user so bind-mounted files are accessible
 # ---------------------------------------------------------------------------
-if [[ -d /home/sandbox/.claude ]]; then
-    chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
-    log "Fixed ~/.claude ownership for sandbox user"
+HOST_UID="${HOST_UID:-}"
+HOST_GID="${HOST_GID:-}"
+
+if [[ -n "$HOST_UID" && "$HOST_UID" != "$(id -u sandbox)" ]]; then
+    usermod -u "$HOST_UID" sandbox 2>/dev/null || true
+    log "Set sandbox UID to $HOST_UID"
 fi
+if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
+    groupmod -g "$HOST_GID" sandbox 2>/dev/null || true
+    log "Set sandbox GID to $HOST_GID"
+fi
+
+# Fix ownership of sandbox home directory itself
+chown sandbox:sandbox /home/sandbox 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # If no domain whitelist is set, run claude directly (no network filtering)
