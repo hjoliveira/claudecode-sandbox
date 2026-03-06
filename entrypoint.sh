@@ -134,20 +134,32 @@ fi
 log "Network rules applied"
 
 # ---------------------------------------------------------------------------
-# Restore .claude.json from backup if missing (bind-mount from host may lack it)
+# Bootstrap container-local ~/.claude from the read-only host mount.
+# Only copy credentials — skip host hooks, project caches, and org state
+# that can break OAuth or reference host-only paths.
 # ---------------------------------------------------------------------------
-CLAUDE_JSON="/home/sandbox/.claude.json"
-if [[ ! -f "$CLAUDE_JSON" ]]; then
-    BACKUP=$(find /home/sandbox/.claude/backups -name '.claude.json.backup.*' 2>/dev/null | sort -t. -k4 -n | tail -1)
-    if [[ -n "$BACKUP" ]]; then
-        # Home dir may not be writable by sandbox yet; copy as root then fix ownership
-        cp "$BACKUP" "$CLAUDE_JSON" 2>/dev/null || {
-            chmod u+w /home/sandbox
-            cp "$BACKUP" "$CLAUDE_JSON"
-        }
-        chown sandbox:sandbox "$CLAUDE_JSON"
-        log "Restored $CLAUDE_JSON from backup"
+HOST_CLAUDE="/home/sandbox/.claude-host"
+CONTAINER_CLAUDE="/home/sandbox/.claude"
+
+if [[ -d "$HOST_CLAUDE" ]]; then
+    mkdir -p "$CONTAINER_CLAUDE"
+
+    # Copy credentials file if it exists
+    if [[ -f "$HOST_CLAUDE/.credentials.json" ]]; then
+        cp "$HOST_CLAUDE/.credentials.json" "$CONTAINER_CLAUDE/.credentials.json"
+        log "Copied credentials from host"
     fi
+
+    # Restore .claude.json from host backup if needed
+    if [[ ! -f "/home/sandbox/.claude.json" ]]; then
+        BACKUP=$(find "$HOST_CLAUDE/backups" -name '.claude.json.backup.*' 2>/dev/null | sort -t. -k4 -n | tail -1)
+        if [[ -n "$BACKUP" ]]; then
+            cp "$BACKUP" "/home/sandbox/.claude.json"
+            log "Restored .claude.json from host backup"
+        fi
+    fi
+
+    chown -R sandbox:sandbox "$CONTAINER_CLAUDE" /home/sandbox/.claude.json 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------

@@ -94,11 +94,12 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Mount host ~/.claude directory to persist OAuth credentials and config
+# Mount host ~/.claude directory read-only so the entrypoint can selectively
+# copy credentials into a clean container-local config directory.
 # ---------------------------------------------------------------------------
 CLAUDE_CONFIG_MOUNT=()
 if [[ -d "${HOME}/.claude" ]]; then
-    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
+    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude-host:ro")
 fi
 
 # ---------------------------------------------------------------------------
