@@ -94,21 +94,12 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Persist only the OAuth credentials file across runs.
-#
-# We mount just ~/.claude/.credentials.json rather than the entire ~/.claude
-# directory. Mounting the whole directory leaks host config (hooks, project
-# settings, cached org references) into the container, which can produce
-# invalid OAuth scopes like "org:" (empty org ID).
+# Mount host ~/.claude directory to persist OAuth credentials and config
 # ---------------------------------------------------------------------------
-CLAUDE_CREDS="${HOME}/.claude/.credentials.json"
 CLAUDE_CONFIG_MOUNT=()
-mkdir -p "${HOME}/.claude"
-# Ensure the file contains valid JSON (empty object) if it doesn't exist yet
-if [[ ! -s "$CLAUDE_CREDS" ]]; then
-    echo '{}' > "$CLAUDE_CREDS"
+if [[ -d "${HOME}/.claude" ]]; then
+    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude")
 fi
-CLAUDE_CONFIG_MOUNT=(-v "$CLAUDE_CREDS:/home/sandbox/.claude/.credentials.json")
 
 # ---------------------------------------------------------------------------
 # Run the sandbox container
