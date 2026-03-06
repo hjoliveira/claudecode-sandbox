@@ -94,15 +94,6 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Mount host ~/.claude directory read-only so the entrypoint can selectively
-# copy credentials into a clean container-local config directory.
-# ---------------------------------------------------------------------------
-CLAUDE_CONFIG_MOUNT=()
-if [[ -d "${HOME}/.claude" ]]; then
-    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude-host:ro")
-fi
-
-# ---------------------------------------------------------------------------
 # Run the sandbox container
 # ---------------------------------------------------------------------------
 exec docker run --rm -it \
@@ -121,7 +112,6 @@ exec docker run --rm -it \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \
     -v "$ALLOWED_DIR:/home/sandbox/project" \
-    ${CLAUDE_CONFIG_MOUNT[@]+"${CLAUDE_CONFIG_MOUNT[@]}"} \
     --tmpfs /tmp:size=512M \
     "$IMAGE_NAME" \
     ${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}
