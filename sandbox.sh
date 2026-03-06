@@ -38,7 +38,6 @@ Default domains (always included):
 
 Examples:
   ./sandbox.sh --dir ./my-project
-  ./sandbox.sh --dir ./my-project -- --login        # First-time OAuth login
   ./sandbox.sh --dir /home/user/code --domains "github.com,api.github.com" -- --model sonnet
 USAGE
     exit 0
@@ -98,8 +97,8 @@ fi
 # Mount host ~/.claude config for persisting auth tokens across runs.
 #
 # OAuth credentials are stored in ~/.claude/.credentials.json.
-# On first run, use: ./sandbox.sh --dir ./project -- --login
-# to authenticate interactively. Credentials persist via the bind mount.
+# On first run, Claude will prompt for login automatically.
+# Credentials persist via the bind mount.
 # ---------------------------------------------------------------------------
 CLAUDE_CONFIG_MOUNT=()
 mkdir -p "${HOME}/.claude"
