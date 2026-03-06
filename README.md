@@ -40,16 +40,6 @@ git clone <repo-url> && cd claudecode-sandbox
   --domains "api.anthropic.com"
 ```
 
-### Docker Compose
-
-You can also use `docker compose` directly:
-
-```bash
-# Edit docker-compose.yml to set your volume mount and domains, then:
-export ANTHROPIC_API_KEY=sk-ant-...
-docker compose run --rm claude
-```
-
 ## Options
 
 | Flag | Description | Default |
