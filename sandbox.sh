@@ -10,11 +10,20 @@
 set -euo pipefail
 
 IMAGE_NAME="claude-sandbox"
-DEFAULT_DOMAINS="api.anthropic.com,claude.ai,platform.claude.com,statsig.anthropic.com,console.anthropic.com,auth.anthropic.com"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Load default domains from config file (one per line, ignoring comments)
+DEFAULT_DOMAINS_FILE="$SCRIPT_DIR/default-domains.conf"
+if [[ -f "$DEFAULT_DOMAINS_FILE" ]]; then
+    DEFAULT_DOMAINS=$(grep -v '^#' "$DEFAULT_DOMAINS_FILE" | grep -v '^$' | paste -sd ',' -)
+else
+    DEFAULT_DOMAINS="api.anthropic.com,claude.ai,platform.claude.com,statsig.anthropic.com,console.anthropic.com,auth.anthropic.com"
+fi
 ALLOWED_DIR=""
 ALLOWED_DOMAINS=""
 DNS_SERVER="${DNS_SERVER:-8.8.8.8}"
 VERBOSE="${VERBOSE:-0}"
+TMPFS_SIZE="512M"
 CLAUDE_ARGS=()
 
 usage() {
@@ -26,6 +35,7 @@ Options:
   --domains LIST      Additional comma-separated allowed domains (optional)
   --dns-server IP     DNS server for resolving domains (default: 8.8.8.8)
   --verbose           Enable verbose logging
+  --tmpfs-size SIZE   Size of /tmp tmpfs mount (default: 512M)
   --build             Force rebuild the Docker image
   -h, --help          Show this help message
 
@@ -51,6 +61,7 @@ while [[ $# -gt 0 ]]; do
         --domains)    ALLOWED_DOMAINS="$2"; shift 2 ;;
         --dns-server) DNS_SERVER="$2"; shift 2 ;;
         --verbose)    VERBOSE=1; shift ;;
+        --tmpfs-size) TMPFS_SIZE="$2"; shift 2 ;;
         --build)      FORCE_BUILD=1; shift ;;
         -h|--help)    usage ;;
         --)           shift; CLAUDE_ARGS=("$@"); break ;;
@@ -86,8 +97,6 @@ fi
 # ---------------------------------------------------------------------------
 # Build image if needed
 # ---------------------------------------------------------------------------
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
 if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/null; then
     echo "Building Docker image '$IMAGE_NAME'..."
     docker build -t "$IMAGE_NAME" "$SCRIPT_DIR"
@@ -120,6 +129,6 @@ exec docker run --rm -it \
     -v "$SANDBOX_CONFIG/claude:/home/sandbox/.claude" \
     -v "$SANDBOX_CONFIG/claude-json:/home/sandbox/.claude-json" \
     -v "$ALLOWED_DIR:/home/sandbox/project" \
-    --tmpfs /tmp:size=512M \
+    --tmpfs "/tmp:size=$TMPFS_SIZE" \
     "$IMAGE_NAME" \
     ${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}

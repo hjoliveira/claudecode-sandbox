@@ -3,7 +3,7 @@
 # Provides filesystem and network isolation for Claude Code CLI
 # without requiring root on the host machine.
 
-FROM node:22-slim
+FROM node:22.14.0-slim
 
 # Install networking tools for domain-based egress filtering
 RUN apt-get update && apt-get install -y --no-install-recommends \
