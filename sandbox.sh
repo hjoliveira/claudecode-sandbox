@@ -31,7 +31,6 @@ Options:
 
 Environment:
   ANTHROPIC_API_KEY   API key (optional; omit to log in interactively)
-  CLAUDE_CONFIG_DIR   Host dir for persisting auth/config (default: ~/.claude-sandbox)
 
 Default domains (always included):
   api.anthropic.com, claude.ai, platform.claude.com, statsig.anthropic.com
@@ -94,10 +93,14 @@ if [[ "$FORCE_BUILD" == "1" ]] || ! docker image inspect "$IMAGE_NAME" &>/dev/nu
 fi
 
 # ---------------------------------------------------------------------------
-# Persist Claude Code config (auth tokens, settings) across sessions
+# Mount host ~/.claude config (read-only) for reusing auth tokens
 # ---------------------------------------------------------------------------
-CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude-sandbox}"
-mkdir -p "$CLAUDE_CONFIG_DIR"
+CLAUDE_CONFIG_MOUNT=()
+if [[ -d "${HOME}/.claude" ]]; then
+    CLAUDE_CONFIG_MOUNT=(-v "${HOME}/.claude:/home/sandbox/.claude:ro")
+else
+    echo "Warning: ~/.claude not found — you may need to log in interactively." >&2
+fi
 
 # ---------------------------------------------------------------------------
 # Run the sandbox container
@@ -113,7 +116,7 @@ exec docker run --rm -it \
     -e "DNS_SERVER=$DNS_SERVER" \
     -e "VERBOSE=$VERBOSE" \
     -v "$ALLOWED_DIR:/home/sandbox/project" \
-    -v "$CLAUDE_CONFIG_DIR:/home/sandbox/.claude" \
+    ${CLAUDE_CONFIG_MOUNT[@]+"${CLAUDE_CONFIG_MOUNT[@]}"} \
     --tmpfs /tmp:size=512M \
     "$IMAGE_NAME" \
     ${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}

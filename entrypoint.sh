@@ -108,7 +108,6 @@ log "Network rules applied"
 # Drop to non-root user and run Claude Code
 # ---------------------------------------------------------------------------
 log "Launching Claude Code as sandbox user"
-chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
 export HOME=/home/sandbox
 SANDBOX_UID="$(id -u sandbox)"
 SANDBOX_GID="$(id -g sandbox)"
