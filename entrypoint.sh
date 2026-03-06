@@ -22,7 +22,7 @@ log() {
 # Fix ownership of mounted ~/.claude so sandbox user can read/write credentials
 # ---------------------------------------------------------------------------
 if [[ -d /home/sandbox/.claude ]]; then
-    chown -R sandbox:sandbox /home/sandbox/.claude
+    chown -R sandbox:sandbox /home/sandbox/.claude 2>/dev/null || true
     log "Fixed ~/.claude ownership for sandbox user"
 fi
 
