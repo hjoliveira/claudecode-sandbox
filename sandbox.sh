@@ -104,7 +104,10 @@ fi
 CLAUDE_CREDS="${HOME}/.claude/.credentials.json"
 CLAUDE_CONFIG_MOUNT=()
 mkdir -p "${HOME}/.claude"
-touch "$CLAUDE_CREDS"
+# Ensure the file contains valid JSON (empty object) if it doesn't exist yet
+if [[ ! -s "$CLAUDE_CREDS" ]]; then
+    echo '{}' > "$CLAUDE_CREDS"
+fi
 CLAUDE_CONFIG_MOUNT=(-v "$CLAUDE_CREDS:/home/sandbox/.claude/.credentials.json")
 
 # ---------------------------------------------------------------------------

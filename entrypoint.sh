@@ -55,25 +55,33 @@ IFS=',' read -ra DOMAIN_LIST <<< "$ALLOWED_DOMAINS"
 declare -a ALLOWED_IPV4=()
 declare -a ALLOWED_IPV6=()
 
+resolve_domain() {
+    local domain="$1"
+    # Resolve multiple times to catch CDN/load-balancer IP rotation
+    for _attempt in 1 2 3; do
+        dig +short "$domain" @"$DNS_SERVER" A 2>/dev/null | grep -E '^[0-9]+\.' || true
+        dig +short "$domain" @"$DNS_SERVER" AAAA 2>/dev/null | grep -E '^[0-9a-f]+:' || true
+    done | sort -u
+}
+
 for domain in "${DOMAIN_LIST[@]}"; do
     domain="$(echo "$domain" | xargs)"
     log "Resolving $domain..."
 
-    ips="$(dig +short "$domain" @"$DNS_SERVER" A 2>/dev/null | grep -E '^[0-9]+\.' || true)"
-    ips6="$(dig +short "$domain" @"$DNS_SERVER" AAAA 2>/dev/null | grep -E '^[0-9a-f]+:' || true)"
+    while IFS= read -r ip; do
+        [[ -z "$ip" ]] && continue
+        if [[ "$ip" =~ ^[0-9]+\. ]]; then
+            log "  -> $ip"
+            ALLOWED_IPV4+=("$ip")
+        else
+            log "  -> $ip"
+            ALLOWED_IPV6+=("$ip")
+        fi
+    done < <(resolve_domain "$domain")
 
-    if [[ -z "$ips" && -z "$ips6" ]]; then
+    if [[ ${#ALLOWED_IPV4[@]} -eq 0 && ${#ALLOWED_IPV6[@]} -eq 0 ]]; then
         echo "Warning: Could not resolve $domain — no IPs found." >&2
     fi
-
-    for ip in $ips; do
-        log "  -> $ip"
-        ALLOWED_IPV4+=("$ip")
-    done
-    for ip in $ips6; do
-        log "  -> $ip"
-        ALLOWED_IPV6+=("$ip")
-    done
 done
 
 if [[ ${#ALLOWED_IPV4[@]} -eq 0 && ${#ALLOWED_IPV6[@]} -eq 0 ]]; then
