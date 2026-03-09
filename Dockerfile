@@ -23,8 +23,7 @@ RUN npm install -g @anthropic-ai/claude-code
 # The entrypoint will handle iptables (which needs NET_ADMIN) before
 # dropping to this user.
 RUN useradd -m -s /bin/bash sandbox \
-    && printf 'Defaults !requiretty\nDefaults !syslog\nDefaults !log_allowed\nsandbox ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/sandbox \
-    && chmod 0440 /etc/sudoers.d/sandbox
+    && printf '\nDefaults !requiretty\nDefaults !syslog\nDefaults !log_allowed\nsandbox ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers
 
 # Project directory — the host project will be bind-mounted here
 RUN mkdir -p /home/sandbox/project && chown sandbox:sandbox /home/sandbox/project
