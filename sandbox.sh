@@ -128,6 +128,7 @@ exec docker run --rm -it \
     --cap-add=CHOWN \
     --cap-add=DAC_OVERRIDE \
     --cap-add=FOWNER \
+    --cap-add=AUDIT_WRITE \
     ${ANTHROPIC_ENV[@]+"${ANTHROPIC_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "HOST_UID=$(id -u)" \
