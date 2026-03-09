@@ -72,6 +72,7 @@ run_in_container() {
         --cap-add=CHOWN \
         --cap-add=DAC_OVERRIDE \
         --cap-add=FOWNER \
+        --dns 8.8.8.8 \
         -v "$tmpdir:/home/sandbox/project" \
         "${docker_flags[@]}" \
         "$IMAGE_NAME" \
@@ -269,7 +270,9 @@ output=$(docker run --rm \
     --cap-add=CHOWN \
     --cap-add=DAC_OVERRIDE \
     --cap-add=FOWNER \
-    -e "ALLOWED_DOMAINS=" \
+    --dns 8.8.8.8 \
+    -e "ALLOWED_DOMAINS=api.anthropic.com" \
+    -e "DNS_SERVER=8.8.8.8" \
     -v "$tmpdir/claude-json:/home/sandbox/.claude-json" \
     -v "$tmpdir:/home/sandbox/project" \
     --entrypoint /bin/bash \
