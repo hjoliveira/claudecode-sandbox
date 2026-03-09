@@ -371,7 +371,83 @@ else
     fail "Entrypoint did not complete with mixed domains and IPs"
 fi
 
-# ── Test 11: default-domains.conf is read by sandbox.sh ──────────────────
+# ── Test 11: Sandbox user can write to mounted project directory ──────────
+
+echo ""
+echo "=== Test: Mounted project directory is writable ==="
+tmpdir="$(mktemp -d)"
+# Ensure the tmpdir is owned by the current user (simulates host project dir)
+chmod 755 "$tmpdir"
+
+output=$(docker run --rm \
+    --cap-drop=ALL \
+    --cap-add=NET_ADMIN \
+    --cap-add=SETUID \
+    --cap-add=SETGID \
+    --cap-add=CHOWN \
+    --cap-add=DAC_OVERRIDE \
+    --cap-add=FOWNER \
+    --dns 8.8.8.8 \
+    -e "ALLOWED_DOMAINS=" \
+    -e "HOST_UID=$(id -u)" \
+    -e "HOST_GID=$(id -g)" \
+    -v "$tmpdir:/home/sandbox/project" \
+    --entrypoint /bin/bash \
+    "$IMAGE_NAME" \
+    -c '
+        sed "s|exec gosu sandbox claude|exec gosu sandbox bash -c \"touch /home/sandbox/project/testfile \&\& echo WRITE_OK\" #|" /entrypoint.sh > /tmp/test-entry.sh
+        chmod +x /tmp/test-entry.sh
+        /tmp/test-entry.sh 2>/dev/null
+    ' 2>&1) || true
+
+if echo "$output" | grep -q "WRITE_OK"; then
+    pass "Sandbox user can write to mounted project directory"
+else
+    fail "Sandbox user cannot write to mounted project directory"
+fi
+rm -rf "$tmpdir"
+
+# ── Test 12: Auto-detect UID/GID from project directory ──────────────────
+
+echo ""
+echo "=== Test: Auto-detect UID/GID from project dir (no HOST_UID/HOST_GID) ==="
+tmpdir="$(mktemp -d)"
+chmod 755 "$tmpdir"
+
+output=$(docker run --rm \
+    --cap-drop=ALL \
+    --cap-add=NET_ADMIN \
+    --cap-add=SETUID \
+    --cap-add=SETGID \
+    --cap-add=CHOWN \
+    --cap-add=DAC_OVERRIDE \
+    --cap-add=FOWNER \
+    --dns 8.8.8.8 \
+    -e "ALLOWED_DOMAINS=" \
+    -e "VERBOSE=1" \
+    -v "$tmpdir:/home/sandbox/project" \
+    --entrypoint /bin/bash \
+    "$IMAGE_NAME" \
+    -c '
+        sed "s|exec gosu sandbox claude|exec gosu sandbox bash -c \"touch /home/sandbox/project/testfile \&\& echo WRITE_OK\" #|" /entrypoint.sh > /tmp/test-entry.sh
+        chmod +x /tmp/test-entry.sh
+        /tmp/test-entry.sh 2>&1
+    ' 2>&1) || true
+
+if echo "$output" | grep -q "Auto-detected HOST_UID"; then
+    pass "UID auto-detected from project directory"
+else
+    fail "UID not auto-detected from project directory"
+fi
+
+if echo "$output" | grep -q "WRITE_OK"; then
+    pass "Sandbox user can write after UID/GID auto-detection"
+else
+    fail "Sandbox user cannot write after UID/GID auto-detection"
+fi
+rm -rf "$tmpdir"
+
+# ── Test 13: default-domains.conf is read by sandbox.sh ──────────────────
 
 echo ""
 echo "=== Test: default-domains.conf parsing ==="
