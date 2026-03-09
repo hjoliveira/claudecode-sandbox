@@ -32,7 +32,7 @@ Usage: ./sandbox.sh [OPTIONS] [-- claude-code-args...]
 
 Options:
   --dir DIR           Directory to expose to Claude Code (required)
-  --domains LIST      Additional comma-separated allowed domains (optional)
+  --domains LIST      Additional comma-separated allowed domains or IP addresses (optional)
   --dns-server IP     DNS server for resolving domains (default: 8.8.8.8)
   --verbose           Enable verbose logging
   --tmpfs-size SIZE   Size of /tmp tmpfs mount (default: 512M)
@@ -49,6 +49,7 @@ Default domains (always included):
 Examples:
   ./sandbox.sh --dir ./my-project
   ./sandbox.sh --dir /home/user/code --domains "github.com,api.github.com" -- --model sonnet
+  ./sandbox.sh --dir ./my-project --domains "192.168.1.100,10.0.0.1"
 USAGE
     exit 0
 }
