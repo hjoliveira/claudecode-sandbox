@@ -14,8 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         curl \
         gosu \
-        sudo \
-    && rm -rf /var/lib/apt/lists/*
+        sudo
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
