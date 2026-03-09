@@ -5,7 +5,7 @@
 
 FROM node:22.14.0-slim
 
-# Install networking tools for domain-based egress filtering
+# Install networking tools for domain-based egress filtering, plus Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
         iptables \
         dnsutils \
@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         curl \
         gosu \
+        python3 \
+        python3-pip \
+        python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude Code CLI
