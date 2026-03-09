@@ -24,13 +24,19 @@ log() {
 HOST_UID="${HOST_UID:-}"
 HOST_GID="${HOST_GID:-}"
 
-if [[ -n "$HOST_UID" && "$HOST_UID" != "$(id -u sandbox)" ]]; then
-    if ! usermod -u "$HOST_UID" sandbox 2>/dev/null; then
-        log "Warning: Failed to set sandbox UID to $HOST_UID"
-    else
-        log "Set sandbox UID to $HOST_UID"
-    fi
+# Auto-detect UID/GID from the mounted project directory if not explicitly set.
+# This ensures correct permissions even when running the image directly without
+# sandbox.sh (which passes HOST_UID/HOST_GID automatically).
+PROJECT_DIR="/home/sandbox/project"
+if [[ -z "$HOST_UID" && -d "$PROJECT_DIR" ]]; then
+    HOST_UID="$(stat -c '%u' "$PROJECT_DIR" 2>/dev/null || echo '')"
+    log "Auto-detected HOST_UID=$HOST_UID from project directory"
 fi
+if [[ -z "$HOST_GID" && -d "$PROJECT_DIR" ]]; then
+    HOST_GID="$(stat -c '%g' "$PROJECT_DIR" 2>/dev/null || echo '')"
+    log "Auto-detected HOST_GID=$HOST_GID from project directory"
+fi
+
 if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
     if ! groupmod -g "$HOST_GID" sandbox 2>/dev/null; then
         log "Warning: Failed to set sandbox GID to $HOST_GID"
@@ -38,10 +44,30 @@ if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
         log "Set sandbox GID to $HOST_GID"
     fi
 fi
+if [[ -n "$HOST_UID" && "$HOST_UID" != "$(id -u sandbox)" ]]; then
+    if ! usermod -u "$HOST_UID" sandbox 2>/dev/null; then
+        log "Warning: Failed to set sandbox UID to $HOST_UID"
+    else
+        log "Set sandbox UID to $HOST_UID"
+    fi
+fi
 
 # Fix ownership of sandbox home directory itself (must be writable for .claude.json)
 chown sandbox:sandbox /home/sandbox
 chmod 755 /home/sandbox
+
+# Verify project directory is writable by the sandbox user
+if [[ -d "$PROJECT_DIR" ]]; then
+    if ! gosu sandbox test -w "$PROJECT_DIR" 2>/dev/null; then
+        log "Project directory not writable by sandbox user, attempting to fix..."
+        chown sandbox:sandbox "$PROJECT_DIR" 2>/dev/null || true
+        if ! gosu sandbox test -w "$PROJECT_DIR" 2>/dev/null; then
+            echo "Error: Project directory $PROJECT_DIR is not writable by sandbox user (UID=$(id -u sandbox), GID=$(id -g sandbox))." >&2
+            echo "The mounted directory is owned by UID=$(stat -c '%u' "$PROJECT_DIR"):GID=$(stat -c '%g' "$PROJECT_DIR")." >&2
+            echo "Ensure the host directory is writable by the user running the container." >&2
+        fi
+    fi
+fi
 
 
 # ---------------------------------------------------------------------------
