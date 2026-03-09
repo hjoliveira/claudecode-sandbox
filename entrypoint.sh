@@ -38,14 +38,14 @@ if [[ -z "$HOST_GID" && -d "$PROJECT_DIR" ]]; then
 fi
 
 if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
-    if ! groupmod -g "$HOST_GID" sandbox 2>/dev/null; then
+    if ! groupmod -o -g "$HOST_GID" sandbox 2>/dev/null; then
         log "Warning: Failed to set sandbox GID to $HOST_GID"
     else
         log "Set sandbox GID to $HOST_GID"
     fi
 fi
 if [[ -n "$HOST_UID" && "$HOST_UID" != "$(id -u sandbox)" ]]; then
-    if ! usermod -u "$HOST_UID" sandbox 2>/dev/null; then
+    if ! usermod -o -u "$HOST_UID" sandbox 2>/dev/null; then
         log "Warning: Failed to set sandbox UID to $HOST_UID"
     else
         log "Set sandbox UID to $HOST_UID"
