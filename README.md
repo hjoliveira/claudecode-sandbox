@@ -10,6 +10,8 @@ Run Claude Code CLI in a Docker-based sandbox with:
 
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 - `ANTHROPIC_API_KEY` environment variable set (optional — omit to log in interactively inside the container)
+- `ANTHROPIC_AUTH_TOKEN` environment variable set (optional — alternative to API key)
+- `ANTHROPIC_BASE_URL` environment variable set (optional — override the Anthropic API base URL)
 
 ## Quick Start
 
