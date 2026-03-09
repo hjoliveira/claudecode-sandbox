@@ -290,7 +290,88 @@ else
     fail ".claude.json persistence not working"
 fi
 
-# ── Test 8: default-domains.conf is read by sandbox.sh ───────────────────
+# ── Test 8: IPv4 address is accepted without DNS resolution ─────────────
+
+echo ""
+echo "=== Test: IPv4 address accepted directly ==="
+output=$(run_in_container \
+    -e "ALLOWED_DOMAINS=1.2.3.4" \
+    -e "DNS_SERVER=8.8.8.8" \
+    -e "VERBOSE=1" \
+    --entrypoint /bin/bash \
+    -- -c '
+        sed "s|exec gosu sandbox claude|echo ENTRYPOINT_OK; exec gosu sandbox echo done #|" /entrypoint.sh > /tmp/test-entry.sh
+        chmod +x /tmp/test-entry.sh
+        /tmp/test-entry.sh 2>&1
+    ' 2>&1) || true
+
+if echo "$output" | grep -q "Using IPv4 address directly"; then
+    pass "IPv4 address accepted without DNS resolution"
+else
+    fail "IPv4 address was not accepted directly"
+fi
+
+if echo "$output" | grep -q "ENTRYPOINT_OK"; then
+    pass "Entrypoint completes with IPv4 address"
+else
+    fail "Entrypoint did not complete with IPv4 address"
+fi
+
+# ── Test 9: IPv6 address is accepted without DNS resolution ─────────────
+
+echo ""
+echo "=== Test: IPv6 address accepted directly ==="
+output=$(run_in_container \
+    -e "ALLOWED_DOMAINS=2001:db8::1" \
+    -e "DNS_SERVER=8.8.8.8" \
+    -e "VERBOSE=1" \
+    --entrypoint /bin/bash \
+    -- -c '
+        sed "s|exec gosu sandbox claude|echo ENTRYPOINT_OK; exec gosu sandbox echo done #|" /entrypoint.sh > /tmp/test-entry.sh
+        chmod +x /tmp/test-entry.sh
+        /tmp/test-entry.sh 2>&1
+    ' 2>&1) || true
+
+if echo "$output" | grep -q "Using IPv6 address directly"; then
+    pass "IPv6 address accepted without DNS resolution"
+else
+    fail "IPv6 address was not accepted directly"
+fi
+
+if echo "$output" | grep -q "ENTRYPOINT_OK"; then
+    pass "Entrypoint completes with IPv6 address"
+else
+    fail "Entrypoint did not complete with IPv6 address"
+fi
+
+# ── Test 10: Mix of domains and IP addresses ──────────────────────────────
+
+echo ""
+echo "=== Test: Mixed domains and IP addresses ==="
+output=$(run_in_container \
+    -e "ALLOWED_DOMAINS=api.anthropic.com,8.8.4.4" \
+    -e "DNS_SERVER=8.8.8.8" \
+    -e "VERBOSE=1" \
+    --entrypoint /bin/bash \
+    -- -c '
+        sed "s|exec gosu sandbox claude|echo ENTRYPOINT_OK; exec gosu sandbox echo done #|" /entrypoint.sh > /tmp/test-entry.sh
+        chmod +x /tmp/test-entry.sh
+        /tmp/test-entry.sh 2>&1
+    ' 2>&1) || true
+
+if echo "$output" | grep -q "Using IPv4 address directly" && echo "$output" | grep -q "Resolving api.anthropic.com"; then
+    pass "Mixed domains and IP addresses processed correctly"
+else
+    fail "Mixed domains and IP addresses not processed correctly"
+fi
+
+if echo "$output" | grep -q "ENTRYPOINT_OK"; then
+    pass "Entrypoint completes with mixed domains and IPs"
+else
+    fail "Entrypoint did not complete with mixed domains and IPs"
+fi
+
+# ── Test 11: default-domains.conf is read by sandbox.sh ──────────────────
 
 echo ""
 echo "=== Test: default-domains.conf parsing ==="

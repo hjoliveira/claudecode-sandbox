@@ -75,9 +75,23 @@ for domain in "${DOMAIN_LIST[@]}"; do
     domain="$(echo "$domain" | xargs)"
     [[ -z "$domain" ]] && continue
 
+    # Check if the entry is an IPv4 address — add directly without DNS resolution
+    if [[ "$domain" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        log "Using IPv4 address directly: $domain"
+        ALLOWED_IPV4+=("$domain")
+        continue
+    fi
+
+    # Check if the entry is an IPv6 address — add directly without DNS resolution
+    if [[ "$domain" =~ ^[0-9a-fA-F:]*:[0-9a-fA-F:]*$ ]]; then
+        log "Using IPv6 address directly: $domain"
+        ALLOWED_IPV6+=("$domain")
+        continue
+    fi
+
     # Validate domain name format (RFC 1123)
     if ! [[ "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
-        echo "Error: Invalid domain name: '$domain'" >&2
+        echo "Error: Invalid domain name or IP address: '$domain'" >&2
         exit 1
     fi
 

@@ -26,12 +26,17 @@ git clone <repo-url> && cd claudecode-sandbox
   --domains "github.com,api.github.com,registry.npmjs.org" \
   --verbose
 
-# 4. Pass extra arguments to claude after --
+# 4. Allow specific IP addresses (IPv4 or IPv6) in addition to or instead of domains
+./sandbox.sh \
+  --dir ./my-project \
+  --domains "192.168.1.100,10.0.0.1,2001:db8::1"
+
+# 5. Pass extra arguments to claude after --
 ./sandbox.sh \
   --dir ./my-project \
   -- --model sonnet --print "fix the tests"
 
-# 5. Force rebuild the image (e.g. after updating Claude Code)
+# 6. Force rebuild the image (e.g. after updating Claude Code)
 ./sandbox.sh --build --dir ./my-project
 ```
 
@@ -40,7 +45,7 @@ git clone <repo-url> && cd claudecode-sandbox
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--dir DIR` | Project directory to expose (required) | — |
-| `--domains LIST` | Additional comma-separated allowed domains | — |
+| `--domains LIST` | Additional comma-separated allowed domains or IP addresses | — |
 | `--dns-server IP` | DNS server for resolving domains | `8.8.8.8` |
 | `--verbose` | Print debug info to stderr | off |
 | `--tmpfs-size SIZE` | Size of /tmp tmpfs mount | `512M` |
@@ -101,14 +106,18 @@ The following Anthropic domains are **always included** automatically:
 | `platform.claude.com` | Authentication |
 | `statsig.anthropic.com` | Feature flags |
 
-Use `--domains` to allow additional services:
+Use `--domains` to allow additional services or specific IP addresses:
 
-| Domain | Why |
-|--------|-----|
+| Domain / IP | Why |
+|-------------|-----|
 | `github.com` | Git push/pull over HTTPS. |
 | `api.github.com` | GitHub API (PRs, issues, etc.). |
 | `registry.npmjs.org` | `npm install` |
 | `pypi.org` + `files.pythonhosted.org` | `pip install` |
+| `192.168.1.100` | Private/on-premise service by IPv4 address |
+| `2001:db8::1` | Private/on-premise service by IPv6 address |
+
+IP addresses are added directly to the firewall rules without DNS resolution, which is useful for private network services or when you want to allow a fixed IP without relying on DNS.
 
 ## Limitations & Considerations
 
