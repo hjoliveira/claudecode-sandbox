@@ -14,8 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         curl \
         gosu \
-        sudo \
-    && rm -rf /var/lib/apt/lists/*
+        sudo
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
@@ -24,7 +23,7 @@ RUN npm install -g @anthropic-ai/claude-code
 # The entrypoint will handle iptables (which needs NET_ADMIN) before
 # dropping to this user.
 RUN useradd -m -s /bin/bash sandbox \
-    && echo "sandbox ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sandbox \
+    && printf 'Defaults !requiretty\nDefaults !log_allowed\nsandbox ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/sandbox \
     && chmod 0440 /etc/sudoers.d/sandbox
 
 # Project directory — the host project will be bind-mounted here
