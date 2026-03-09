@@ -40,7 +40,9 @@ Options:
   -h, --help          Show this help message
 
 Environment:
-  ANTHROPIC_API_KEY   API key (optional; omit to log in interactively)
+  ANTHROPIC_API_KEY     API key (optional; omit to log in interactively)
+  ANTHROPIC_AUTH_TOKEN  Auth token (optional; alternative to API key)
+  ANTHROPIC_BASE_URL   Base URL for the Anthropic API (optional)
 
 Default domains (always included):
   api.anthropic.com, claude.ai, platform.claude.com, statsig.anthropic.com,
@@ -82,9 +84,15 @@ else
     ALLOWED_DOMAINS="$DEFAULT_DOMAINS"
 fi
 
-API_KEY_ENV=()
+ANTHROPIC_ENV=()
 if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-    API_KEY_ENV=(-e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY")
+    ANTHROPIC_ENV+=(-e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY")
+fi
+if [[ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]]; then
+    ANTHROPIC_ENV+=(-e "ANTHROPIC_AUTH_TOKEN=$ANTHROPIC_AUTH_TOKEN")
+fi
+if [[ -n "${ANTHROPIC_BASE_URL:-}" ]]; then
+    ANTHROPIC_ENV+=(-e "ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL")
 fi
 
 # Resolve to absolute path (works on macOS and Linux)
@@ -120,7 +128,7 @@ exec docker run --rm -it \
     --cap-add=CHOWN \
     --cap-add=DAC_OVERRIDE \
     --cap-add=FOWNER \
-    ${API_KEY_ENV[@]+"${API_KEY_ENV[@]}"} \
+    ${ANTHROPIC_ENV[@]+"${ANTHROPIC_ENV[@]}"} \
     -e "ALLOWED_DOMAINS=$ALLOWED_DOMAINS" \
     -e "HOST_UID=$(id -u)" \
     -e "HOST_GID=$(id -g)" \
