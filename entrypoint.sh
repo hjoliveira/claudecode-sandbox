@@ -25,12 +25,18 @@ HOST_UID="${HOST_UID:-}"
 HOST_GID="${HOST_GID:-}"
 
 if [[ -n "$HOST_UID" && "$HOST_UID" != "$(id -u sandbox)" ]]; then
-    usermod -u "$HOST_UID" sandbox 2>/dev/null || true
-    log "Set sandbox UID to $HOST_UID"
+    if ! usermod -u "$HOST_UID" sandbox 2>/dev/null; then
+        log "Warning: Failed to set sandbox UID to $HOST_UID"
+    else
+        log "Set sandbox UID to $HOST_UID"
+    fi
 fi
 if [[ -n "$HOST_GID" && "$HOST_GID" != "$(id -g sandbox)" ]]; then
-    groupmod -g "$HOST_GID" sandbox 2>/dev/null || true
-    log "Set sandbox GID to $HOST_GID"
+    if ! groupmod -g "$HOST_GID" sandbox 2>/dev/null; then
+        log "Warning: Failed to set sandbox GID to $HOST_GID"
+    else
+        log "Set sandbox GID to $HOST_GID"
+    fi
 fi
 
 # Fix ownership of sandbox home directory itself (must be writable for .claude.json)
@@ -67,7 +73,18 @@ resolve_domain() {
 
 for domain in "${DOMAIN_LIST[@]}"; do
     domain="$(echo "$domain" | xargs)"
+    [[ -z "$domain" ]] && continue
+
+    # Validate domain name format (RFC 1123)
+    if ! [[ "$domain" =~ ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
+        echo "Error: Invalid domain name: '$domain'" >&2
+        exit 1
+    fi
+
     log "Resolving $domain..."
+
+    local_ipv4_before=${#ALLOWED_IPV4[@]}
+    local_ipv6_before=${#ALLOWED_IPV6[@]}
 
     while IFS= read -r ip; do
         [[ -z "$ip" ]] && continue
@@ -80,7 +97,7 @@ for domain in "${DOMAIN_LIST[@]}"; do
         fi
     done < <(resolve_domain "$domain")
 
-    if [[ ${#ALLOWED_IPV4[@]} -eq 0 && ${#ALLOWED_IPV6[@]} -eq 0 ]]; then
+    if [[ ${#ALLOWED_IPV4[@]} -eq $local_ipv4_before && ${#ALLOWED_IPV6[@]} -eq $local_ipv6_before ]]; then
         echo "Warning: Could not resolve $domain — no IPs found." >&2
     fi
 done

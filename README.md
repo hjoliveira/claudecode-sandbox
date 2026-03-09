@@ -43,6 +43,7 @@ git clone <repo-url> && cd claudecode-sandbox
 | `--domains LIST` | Additional comma-separated allowed domains | — |
 | `--dns-server IP` | DNS server for resolving domains | `8.8.8.8` |
 | `--verbose` | Print debug info to stderr | off |
+| `--tmpfs-size SIZE` | Size of /tmp tmpfs mount | `512M` |
 | `--build` | Force rebuild the Docker image | off |
 
 ## How It Works
@@ -61,7 +62,7 @@ git clone <repo-url> && cd claudecode-sandbox
 │  │  entrypoint.sh:                          │    │
 │  │    1. Resolve ALLOWED_DOMAINS → IPs      │    │
 │  │    2. iptables OUTPUT rules (whitelist)   │    │
-│  │    3. Drop to non-root user (setpriv)     │    │
+│  │    3. Drop to non-root user (gosu)         │    │
 │  │    4. exec claude                        │    │
 │  │                                          │    │
 │  │  Filesystem:                             │    │
@@ -75,8 +76,8 @@ git clone <repo-url> && cd claudecode-sandbox
 │  │    DROP  → everything else               │    │
 │  │                                          │    │
 │  │  Security:                               │    │
-│  │    --cap-drop=ALL (except NET_ADMIN)     │    │
-│  │    SETUID/SETGID (for user switch)       │    │
+│  │    --cap-drop=ALL +NET_ADMIN +CHOWN      │    │
+│  │    +SETUID/SETGID +DAC_OVERRIDE +FOWNER  │    │
 │  │    Claude runs as non-root user          │    │
 │  └──────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────┘
@@ -85,7 +86,7 @@ git clone <repo-url> && cd claudecode-sandbox
 ### Security layers
 
 - **seccomp** profile restricts available syscalls
-- **Capability dropping** — only `NET_ADMIN` is granted (for iptables); all others are dropped
+- **Capability dropping** — only `NET_ADMIN`, `SETUID`, `SETGID`, `CHOWN`, `DAC_OVERRIDE`, and `FOWNER` are granted; all others are dropped
 - **cgroup isolation** — CPU/memory limits can be added via `--memory` / `--cpus`
 - **User isolation** — Claude runs as a non-root user inside the container; no root on the host
 

@@ -1,0 +1,3 @@
+# ShellCheck configuration
+# See: https://www.shellcheck.net/wiki/
+shell=bash
